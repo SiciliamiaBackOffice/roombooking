@@ -3,6 +3,7 @@ const router = express.Router();
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const axiosClient = require('./axiosClient');
+const crypto = require("crypto");
 
 router.use(bodyParser.json());
 router.use(cors({ origin: "*" }));
@@ -101,6 +102,7 @@ router.get("/inventory", async (req, res) => {
 router.post("/bookings", async (req, res) => {
     try {
         const auth = await ensureAuthentication();
+        const bookingid = crypto.randomUUID();
         const {
             roomId,
             status = "confirmed", // Default to "confirmed"
@@ -122,8 +124,10 @@ router.post("/bookings", async (req, res) => {
         if (!roomId || !arrival || !departure || !numAdult || !firstName || !lastName || !email) {
             return res.status(400).json({ error: "Missing required fields" });
         }
+        
 
         const response = await axiosClient.post("/bookings", [{
+            bookingid,
             roomId,
             status,
             arrival,
@@ -142,7 +146,7 @@ router.post("/bookings", async (req, res) => {
             country
         }], { headers: { token: auth.token } });
 
-        res.json(response.data);
+        res.json(bookingid, "booking created successfull",response.data);
     } catch (error) {
         console.error("Error creating booking:", error.response?.data || error.message);
         res.status(500).json({ error: "Booking failed" });
